@@ -13,6 +13,9 @@ return array(
     'Errors' => 'Fouten',
     'Upload file' => 'Bestand uploaden',
     'Map fields' => 'Velden instellen',
+    'Category' => 'Categorie',
+    'User' => 'Gebruiker',
+    'Entry' => 'Inhoud',
     'Choose the type you want to import into.' => 'Kies het type waar je in wilt importeren.',
     'Choose the section you want to import to.' => 'Kies de sectie waar je in wilt importeren.',
     'Entrytype' => 'Itemtype',
@@ -45,5 +48,6 @@ return array(
     'The import task is finished' => 'Het import proces is afgerond',
     'Revert Import' => 'Import terugdraaien',
     'Reverting import' => 'Import aan het terugdraaien',
-    'Revert import process started.' => 'Import terugdraai proces gestart'
+    'Revert import process started.' => 'Import terugdraai proces gestart',
+    'The import history of {file} has been deleted.' => 'De import geschiedenis van {file} is verwijderd.'
 );
