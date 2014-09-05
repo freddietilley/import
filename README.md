@@ -46,7 +46,10 @@ Changelog
  - Added the ability to download the originally uploaded file
  - Added the ability to delete import history
  - Parse numbers while respecting locales
+ - Added Date FieldType parsing
+ - Show field handle that gave the error (if any)
  - Changed the "registerImportFinish" hook to "onImportFinish" event
+ - Improved UI
 
 ###0.7.3###
  - Fixed a bug that led to not importing data and not failing import
