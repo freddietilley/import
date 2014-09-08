@@ -117,19 +117,37 @@ class ImportService extends BaseApplicationComponent
         // Prepare element model
         $entry = craft()->$service->prepForElementModel($fields, $entry);
         
-        // Hook to prepare as appropriate fieldtypes
-        array_walk($fields, function(&$data, $handle) {
-            return craft()->plugins->call('registerImportOperation', array(&$data, $handle));
-        });
+        try {
+        
+            // Hook to prepare as appropriate fieldtypes
+            array_walk($fields, function(&$data, $handle) {
+                return craft()->plugins->call('registerImportOperation', array(&$data, $handle));
+            });
+        
+        } catch(Exception $e) {
+        
+            // Something went terribly wrong, assume its only this row
+            $this->log[$row] = craft()->import_history->log($settings['history'], $row, array('exception' => array($e->getMessage())));
+        
+        }
         
         // Set fields on entry model
         $entry->setContentFromPost($fields);
         
-        // Log
-        if(!craft()->$service->save($entry, $settings)) {
+        try {
         
-            // Log errors when unsuccessful
-            $this->log[$row] = craft()->import_history->log($settings['history'], $row, $entry->getErrors());
+            // Log
+            if(!craft()->$service->save($entry, $settings)) {
+            
+                // Log errors when unsuccessful
+                $this->log[$row] = craft()->import_history->log($settings['history'], $row, $entry->getErrors());
+            
+            }
+            
+        } catch(Exception $e) {
+        
+            // Something went terribly wrong, assume its only this row
+            $this->log[$row] = craft()->import_history->log($settings['history'], $row, array('exception' => array($e->getMessage())));
         
         }
     

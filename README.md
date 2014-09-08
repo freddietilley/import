@@ -30,14 +30,14 @@ The plugin's folder should be named "import"
 History
 ![History](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/history.png)
 
-Upload
-![Upload](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/upload.png)
+Upload (entries)
+![Upload](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/entries.png)
+
+Upload (users)
+![Upload](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/users.png)
 
 Map fields
 ![Map](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/map.png)
-
-Map fields (2)
-![Fields](https://raw.githubusercontent.com/boboldehampsink/CraftImportPlugin/gh-pages/images/fields.png)
 
 Changelog
 =================
@@ -47,7 +47,7 @@ Changelog
  - Added the ability to delete import history
  - Parse numbers while respecting locales
  - Added Date FieldType parsing
- - Show field handle that gave the error (if any)
+ - Smoother error handling
  - Changed the "registerImportFinish" hook to "onImportFinish" event
  - Improved UI
 
