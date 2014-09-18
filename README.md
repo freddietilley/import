@@ -41,6 +41,18 @@ Map fields
 
 Changelog
 =================
+###0.8.4###
+ - Fixed handling element fields for category element
+ - Make sure there's always a valid criterium when matching
+
+###0.8.3###
+ - Respect element connect limits
+
+###0.8.2###
+ - Updated the slugify function to match the latest Craft createSlug function
+ - Check if the installation supports usergroups
+ - Fixed phpunit unit testing
+
 ###0.8.1###
  - Respect import order when connecting to entries, assets or users
  - Report when deleting fails

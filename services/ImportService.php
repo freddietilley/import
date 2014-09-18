@@ -67,14 +67,15 @@ class ImportService extends BaseApplicationComponent
             $criteria = craft()->$service->setCriteria($settings);
                         
             // Set up criteria model for matching        
+            $cmodel = array();    
             foreach($settings['map'] as $key => $value) {
-                if(isset($criteria->$settings['map'][$key]) && isset($settings['unique'][$key]) && intval($settings['unique'][$key]) == 1) {
-                    $criteria->$settings['map'][$key] = $fields[$value];
+                if(isset($criteria->$settings['map'][$key]) && isset($settings['unique'][$key]) && intval($settings['unique'][$key]) == 1 && !empty($fields[$value])) {
+                    $criteria->$settings['map'][$key] = $cmodel[] = $fields[$value];
                 }
             } 
             
             // If there's a match...
-            if($criteria->total()) {
+            if(count($cmodel) && $criteria->count()) {
                 
                 // If we're deleting
                 if($settings['behavior'] == ImportModel::BehaviorDelete) {
@@ -83,8 +84,8 @@ class ImportService extends BaseApplicationComponent
                     $elements = $criteria->find();
                 
                     // Fire an 'onBeforeImportDelete' event
-                    Craft::import('plugins.import.events.ImportDeleteEvent');
-                    $event = new ImportDeleteEvent($this, array('elements' => $elements));
+                    Craft::import('plugins.import.events.BeforeImportDeleteEvent');
+                    $event = new BeforeImportDeleteEvent($this, array('elements' => $elements));
                     $this->onBeforeImportDelete($event);
                     
                     // Give event the chance to blow off deletion
@@ -241,10 +242,13 @@ class ImportService extends BaseApplicationComponent
                     
                     // Don't connect empty fields
                     if(!empty($data)) {
+                    
+                        // Get field settings
+                        $settings = $field->getFieldType()->getSettings();
                 
                         // Get source id's for connecting
                         $sectionIds = array();
-                        $sources = $field->getFieldType()->getSettings()->sources;
+                        $sources = $settings->sources;
                         if(is_array($sources)) {
                             foreach($sources as $source) {
                                 list($type, $id) = explode(':', $source);
@@ -255,6 +259,7 @@ class ImportService extends BaseApplicationComponent
                         // Find matching element in sections       
                         $criteria = craft()->elements->getCriteria(ElementType::Entry);
                         $criteria->sectionId = $sectionIds;
+                        $criteria->limit = $settings->limit;
  
                         // Get search strings
                         $search = ArrayHelper::stringToArray($data);
@@ -289,14 +294,17 @@ class ImportService extends BaseApplicationComponent
                     
                     // Don't connect empty fields
                     if(!empty($data)) {
-                                                                        
+                    
+                        // Get field settings
+                        $settings = $field->getFieldType()->getSettings();
+                                                                                                
                         // Get source id
-                        $source = $field->getFieldType()->getSettings()->source;
+                        $source = $settings->source;
                         list($type, $id) = explode(':', $source);
                         
                         // Get category data
                         $category = new CategoryModel();
-                        $category->groupId = $id;                    
+                        $category->groupId = $id;                  
                     
                         // This we append before the slugified path
                         $categoryUrl = str_replace('/{slug}', '/', $category->getUrlFormat());
@@ -305,6 +313,7 @@ class ImportService extends BaseApplicationComponent
                         $criteria = craft()->elements->getCriteria(ElementType::Category);
                         $criteria->groupId = $id;
                         $criteria->uri = $categoryUrl . $this->_slugify($data);
+                        $criteria->limit = $settings->limit;
                         
                         // Return the found id's for connecting
                         $data = $criteria->ids();
@@ -325,10 +334,13 @@ class ImportService extends BaseApplicationComponent
                     
                     // Don't connect empty fields
                     if(!empty($data)) {
-                
+                    
+                        // Get field settings
+                        $settings = $field->getFieldType()->getSettings();
+                                        
                         // Get source id's for connecting
                         $sourceIds = array();
-                        $sources = $field->getFieldType()->getSettings()->sources;
+                        $sources = $settings->sources;
                         if(is_array($sources)) {
                             foreach($sources as $source) {
                                 list($type, $id) = explode(':', $source);
@@ -339,6 +351,7 @@ class ImportService extends BaseApplicationComponent
                         // Find matching element in sources    
                         $criteria = craft()->elements->getCriteria(ElementType::Asset);
                         $criteria->sourceId = $sourceIds;
+                        $criteria->limit = $settings->limit;
                         
                         // Get search strings
                         $search = ArrayHelper::stringToArray($data);
@@ -373,9 +386,24 @@ class ImportService extends BaseApplicationComponent
                     
                     // Don't connect empty fields
                     if(!empty($data)) {
+                    
+                        // Get field settings
+                        $settings = $field->getFieldType()->getSettings();
                                 
-                        // Find matching element        
-                        $criteria = craft()->elements->getCriteria(ElementType::User);
+                        // Get group id's for connecting
+                        $groupIds = array();
+                        $sources = $settings->sources;
+                        if(is_array($sources)) {
+                            foreach($sources as $source) {
+                                list($type, $id) = explode(':', $source);
+                                $groupIds[] = $id;
+                            }
+                        }
+                                    
+                        // Find matching element in sources    
+                        $criteria = craft()->elements->getCriteria(ElementType::Asset);
+                        $criteria->groupId = $groupIds;
+                        $criteria->limit = $settings->limit;
                         
                         // Get search strings
                         $search = ArrayHelper::stringToArray($data);
@@ -504,26 +532,33 @@ class ImportService extends BaseApplicationComponent
         $slug = preg_replace('/<(.*?)>/u', '', $slug);
         
         // Remove inner-word punctuation.
-        $slug = preg_replace('/[\'"‘’“”]/u', '', $slug);
-        
-        // Make it lowercase
-        $slug = mb_strtolower($slug, 'UTF-8');
-        
-        // Get the "words".  Split on anything that is not a unicode letter or number.
-        // Periods are OK too.
-        // Forward slashes are OK too.
-        preg_match_all('/[\p{L}\p{N}\.\/]+/u', $slug, $words);
+        $slug = preg_replace('/[\'"‘’“”\[\]\(\)\{\}:]/u', '', $slug);
+
+        if (craft()->config->get('allowUppercaseInSlug') === false)
+        {
+            // Make it lowercase
+            $slug = StringHelper::toLowerCase($slug, 'UTF-8');
+        }
+
+        // Get the "words".  Split on anything that is not a unicode letter or number. Periods, underscores, hyphens and forward slashes get a pass.
+        preg_match_all('/[\p{L}\p{N}\.\/_-]+/u', $slug, $words);
         $words = ArrayHelper::filterEmptyStringsFromArray($words[0]);
-        $slug = implode('-', $words);
-        
+        $slug = implode(craft()->config->get('slugWordSeparator'), $words);
+
         return $slug;
         
     }
     
     // Fires an "onBeforeImportDelete" event
-    public function onBeforeImportDelete(ImportDeleteEvent $event)
+    public function onBeforeImportDelete(BeforeImportDeleteEvent $event)
     {
         $this->raiseEvent('onBeforeImportDelete', $event);
+    }
+    
+    // Fires an "onImportFinish" event
+    public function onImportFinish(ImportFinishEvent $event)
+    {
+        $this->raiseEvent('onImportFinish', $event);
     }
 
 }
