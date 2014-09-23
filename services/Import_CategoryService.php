@@ -94,7 +94,7 @@ class Import_CategoryService extends BaseApplicationComponent
                // Exact match
                $criteria->search = '"'.$data.'"';
                
-               // Return the first found id for connecting
+               // Return the first found element for connecting
                if($criteria->total()) {
                
                    $entry->$parent = $criteria->first()->id;
